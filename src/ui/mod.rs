@@ -2,17 +2,19 @@ use bevy::prelude::*;
 use level_select::LevelSelectPlugin;
 use radio_button::RadioButtonPlugin;
 use score_dialog::ScoreDialogPlugin;
+use editor::EditorPlugin;
 
 use crate::theme;
 
 pub mod level_select;
 pub mod radio_button;
 pub mod score_dialog;
+pub mod editor;
 
 pub struct UiPlugin;
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((RadioButtonPlugin, LevelSelectPlugin, ScoreDialogPlugin));
+        app.add_plugins((RadioButtonPlugin, LevelSelectPlugin, ScoreDialogPlugin, EditorPlugin));
         app.add_systems(Update, button_system);
     }
 }

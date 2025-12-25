@@ -15,6 +15,8 @@ pub struct LevelSelectScreen;
 #[derive(Component)]
 pub struct LevelSelectButton(u32);
 #[derive(Component)]
+struct EditorButton;
+#[derive(Component)]
 struct SettingsPanelBody;
 #[derive(Component)]
 struct LevelsPanelBody;
@@ -33,6 +35,7 @@ impl Plugin for LevelSelectPlugin {
             Update,
             (
                 level_select_button_system,
+                editor_button_system,
                 (
                     music_volume_button_system,
                     music_volume_text_system.run_if(resource_changed::<MusicVolume>),
@@ -50,6 +53,20 @@ impl Plugin for LevelSelectPlugin {
 }
 
 // TODO add "diagonal scrolling grid" background
+
+fn editor_button_system(
+    query: Query<(&Interaction, &EditorButton), Changed<Interaction>>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    for (interaction, _) in &query {
+        match *interaction {
+            Interaction::Pressed => {
+                next_state.set(GameState::Editor);
+            },
+            _ => {}
+        }
+    }
+}
 
 fn level_select_button_system(
     query: Query<(&Interaction, &LevelSelectButton), Changed<Interaction>>,
@@ -128,6 +145,24 @@ fn level_select_enter(
                 },
                 TextColor(theme::PIXIE[1].into()),
             ));
+            parent.spawn((
+                Name::new("EditorItem"),
+                Node {
+                    width: Val::Px(100.0),
+                    height: Val::Px(40.0),
+                    align_self: AlignSelf::Center,
+                    display: Display::Flex,
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                Button,
+                EditorButton,
+            )).with_children(|parent| {
+                parent.spawn(
+                    Text::new("EDITOR"),
+                );
+            });
             // Right side of top bar
             parent
                 .spawn(Node {

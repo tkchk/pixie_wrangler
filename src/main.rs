@@ -61,6 +61,7 @@ fn main() {
         .set(WindowPlugin {
             primary_window: Some(Window {
                 title: String::from("Pixie Wrangler"),
+                position: WindowPosition::At(IVec2::new(0, 0)),
                 ..default()
             }),
             ..default()
@@ -237,6 +238,7 @@ enum GameState {
     Loading,
     LevelSelect,
     Playing,
+    Editor
 }
 
 #[derive(Resource, Default)]
