@@ -1,21 +1,22 @@
-use crate::{layer, theme, GameState, GridPoint, Handles, RoadGraph, SelectedLevel, BOTTOM_BAR_HEIGHT, GRID_SIZE};
+use crate::{layer, snap_to_grid, theme, Cursor, GameState, GridPoint, Handles, MainCamera,
+            MousePos, MouseSnappedPos, RoadGraph, SelectedLevel, BOTTOM_BAR_HEIGHT, GRID_SIZE};
 
 pub struct EditorPlugin;
 #[derive(Component)]
 pub struct EditorScreen;
 #[derive(Component)]
 struct ExitEditorButton;
+#[derive(Component)]
+struct Draggable;
 
 use bevy::prelude::*;
 use bevy_prototype_lyon::geometry::ShapeBuilder;
 use bevy_prototype_lyon::shapes;
 use bevy_prototype_lyon::prelude::*;
-use crate::level::Level;
-use crate::save::Solutions;
 
 impl Plugin for EditorPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Editor), (spawn_level, editor).chain());
+        app.add_systems(OnEnter(GameState::Editor), (spawn_grid, editor).chain());
         app.add_systems(Update, exit_editor_button_system);
         app.add_systems(OnExit(GameState::Editor), editor_exit);
     }
@@ -48,13 +49,8 @@ fn exit_editor_button_system(
     }
 }
 
-fn spawn_level(
+fn spawn_grid(
     mut commands: Commands,
-    mut graph: ResMut<RoadGraph>,
-    levels: Res<Assets<Level>>,
-    selected_level: Res<SelectedLevel>,
-    handles: Res<Handles>,
-    solutions: Res<Solutions>,
 ) {
     for x in ((-25 * (GRID_SIZE as i32))..=25 * (GRID_SIZE as i32)).step_by(GRID_SIZE as usize) {
         for y in (-15 * (GRID_SIZE as i32)..=15 * (GRID_SIZE as i32)).step_by(GRID_SIZE as usize) {
@@ -128,6 +124,19 @@ fn editor(
                     Text::new("←"),
                 );
             });
+            parent.spawn((
+                Node {
+                    width: Val::Px(50.0),
+                    height: Val::Px(50.0),
+                    align_self: AlignSelf::Center,
+                    display: Display::Flex,
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.5, 0.5, 0.5, 1.0)),
+                Draggable,
+            ));
         })
         .id();
 
