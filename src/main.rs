@@ -347,6 +347,8 @@ pub const BOTTOM_BAR_HEIGHT: f32 = 70.0;
 const LAYER_TWO_MULTIPLIER: f32 = 2.0;
 const LAYER_THREE_MULTIPLIER: f32 = 4.0;
 
+// This system is designed for tool buttons text
+// it switches them to lime or white if pressed or not
 fn tool_button_display_system(
     mut q_text: Query<&mut TextColor>,
     q_button: Query<(&RadioButton, &Children), (Changed<RadioButton>, With<ToolButton>)>,
@@ -363,6 +365,9 @@ fn tool_button_display_system(
     }
 }
 
+
+// This is a system that selects our tools:
+// drawing on layer1 or layer2
 fn tool_button_system(
     mut selected_tool: ResMut<SelectedTool>,
     mut road_state: ResMut<RoadDrawingState>,
@@ -389,6 +394,9 @@ fn tool_button_system(
     }
 }
 
+// This one is an algo that finds path between terminuses
+// in our game. Not sure what it does exactly at this point.
+// But, it's not needed in the editor.
 fn pathfinding_system(
     graph: Res<RoadGraph>,
     mut pathfinding: ResMut<PathfindingState>,
@@ -471,6 +479,11 @@ fn pathfinding_system(
     pathfinding.valid = true;
 }
 
+// This one just updates the text
+// we have based on the state of the game
+// (whether we're in simulator or not)
+// Strange enough, it doesnt switch the state
+// of the simulation.
 fn pixie_button_text_system(
     pathfinding: Res<PathfindingState>,
     sim_state: Res<SimulationState>,
@@ -498,6 +511,8 @@ fn pixie_button_text_system(
     }
 }
 
+// This is simple - just switch the state of the game to level select
+// when we press back in the playing state
 fn back_button_system(
     q_interaction: Query<&Interaction, (Changed<Interaction>, With<Button>, With<BackButton>)>,
     mut next_state: ResMut<NextState<GameState>>,
@@ -507,6 +522,8 @@ fn back_button_system(
     }
 }
 
+// This one prepares pixies for spawning
+// Also, it works with simulation state
 fn pixie_button_system(
     mut commands: Commands,
     mut pixie_count: ResMut<PixieCount>,
@@ -595,6 +612,7 @@ fn pixie_button_system(
     }
 }
 
+// This nukes whatever we draw.
 fn reset_button_system(
     mut commands: Commands,
     q_interaction: Query<&Interaction, (Changed<Interaction>, With<Button>, With<ResetButton>)>,
@@ -644,6 +662,7 @@ fn reset_button_system(
     }
 }
 
+// Switch the pixies speed
 fn speed_button_system(
     q_interaction: Query<
         (&Interaction, &Children),
@@ -669,6 +688,7 @@ fn snap_to_grid(position: Vec2, grid_size: f32) -> Vec2 {
     (position / grid_size).round() * grid_size
 }
 
+// This is for our circle cursor
 fn draw_cursor_system(
     mut commands: Commands,
     line_drawing: Res<RoadDrawingState>,
@@ -699,6 +719,9 @@ fn draw_cursor_system(
     }
 }
 
+// This is for a switch between
+// modes when we draw the line and
+// when we are in the mode or line removal
 fn drawing_mode_change_system(
     selected_tool: Res<SelectedTool>,
     mut road_state: ResMut<RoadDrawingState>,
@@ -720,6 +743,10 @@ fn drawing_mode_change_system(
     }
 }
 
+// All keyboard-realted stuff
+// didn't dig too much
+// R -> for net ripping
+// Esc -> drop drawing state
 fn keyboard_system(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut road_state: ResMut<RoadDrawingState>,
@@ -787,6 +814,8 @@ fn keyboard_system(
     }
 }
 
+// Capturing mouse movement
+// with sanpping to the grid
 fn mouse_movement_system(
     mut cursor_moved_events: MessageReader<CursorMoved>,
     mut mouse: ResMut<MousePos>,
@@ -812,6 +841,9 @@ fn mouse_movement_system(
     }
 }
 
+// pixie_count should be the amount of success
+// for pixies that flow to IN terminus.
+// This one just updates the amount.
 fn update_pixie_count_text_system(
     pixie_count: Res<PixieCount>,
     mut query: Query<&mut Text, With<PixieCountText>>,
@@ -1198,6 +1230,8 @@ fn reset_game(mut commands: Commands, mut graph: ResMut<RoadGraph>) {
     graph.graph.clear();
 }
 
+// Main system that actually shows the level
+// A lot of calls from within this file.
 fn spawn_level(
     mut commands: Commands,
     mut graph: ResMut<RoadGraph>,
