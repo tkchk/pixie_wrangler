@@ -1,3 +1,4 @@
+use std::slice::Windows;
 use crate::{layer, snap_to_grid, theme, Cursor, GameState, GridPoint, Handles, MainCamera,
             MousePos, MouseSnappedPos, RoadGraph, SelectedLevel, BOTTOM_BAR_HEIGHT, GRID_SIZE};
 
@@ -9,6 +10,15 @@ struct ExitEditorButton;
 #[derive(Component)]
 struct Draggable;
 
+#[derive(Component)]
+struct Size(Vec2);
+
+#[derive(Resource, Default)]
+struct DragState {
+    entity: Option<Entity>,
+    offset: Vec2,
+}
+
 use bevy::prelude::*;
 use bevy_prototype_lyon::geometry::ShapeBuilder;
 use bevy_prototype_lyon::shapes;
@@ -16,14 +26,12 @@ use bevy_prototype_lyon::prelude::*;
 
 impl Plugin for EditorPlugin {
     fn build(&self, app: &mut App) {
+        app.insert_resource(DragState::default());
         app.add_systems(OnEnter(GameState::Editor), (spawn_grid, editor).chain());
         app.add_systems(Update, exit_editor_button_system);
+        app.add_systems(Update, (drag_system).chain());
         app.add_systems(OnExit(GameState::Editor), editor_exit);
     }
-}
-
-fn editor_enter() {
-    ()
 }
 
 fn editor_exit(
@@ -124,18 +132,18 @@ fn editor(
                     Text::new("←"),
                 );
             });
+            let size = Vec2::new(120.0, 80.0);
+            // Our sample draggable square
             parent.spawn((
-                Node {
-                    width: Val::Px(50.0),
-                    height: Val::Px(50.0),
-                    align_self: AlignSelf::Center,
-                    display: Display::Flex,
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
+                Draggable,
+                Size(size),
+                Transform::default(),
+                GlobalTransform::default(),
+                Sprite {
+                    color: Color::WHITE,
+                    custom_size: Some(Vec2::new(120.0, 80.0)),
                     ..default()
                 },
-                BackgroundColor(Color::srgba(0.5, 0.5, 0.5, 1.0)),
-                Draggable,
             ));
         })
         .id();
@@ -155,4 +163,47 @@ fn editor(
     commands
         .entity(editor_root)
         .add_children(&[editor_main_content, editor_bottom_bar]);
+}
+
+fn drag_system(
+    mut drag: ResMut<DragState>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    windows: Query<&Window>,
+    mut q: Query<(Entity, &mut Transform, &Size), With<Draggable>>,
+) {
+    let window = windows.single().unwrap();
+    let Some(cursor) = window.cursor_position() else { return; };
+
+    // Convert cursor to world coordinates
+    let world_cursor = cursor - Vec2::new(window.width(), window.height()) / 2.0;
+
+    // Start drag
+    if mouse.just_pressed(MouseButton::Left) {
+        for (entity, transform, size) in q.iter_mut() {
+            let pos = transform.translation.truncate();
+            let half = size.0 / 2.0;
+            let min = pos - half;
+            let max = pos + half;
+
+            if world_cursor.x >= min.x && world_cursor.x <= max.x &&
+                world_cursor.y >= min.y && world_cursor.y <= max.y {
+                drag.entity = Some(entity);
+                drag.offset = pos - world_cursor;
+                println!("{}", drag.offset);
+                break;
+            }
+        }
+    }
+
+    // Move
+    if let Some(entity) = drag.entity {
+        if let Ok((_, mut transform, _)) = q.get_mut(entity) {
+            transform.translation = (world_cursor + drag.offset).extend(transform.translation.z);
+        }
+    }
+
+    // End drag
+    if mouse.just_released(MouseButton::Left) {
+        drag.entity = None;
+    }
 }
