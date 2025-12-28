@@ -147,18 +147,17 @@ fn editor(
         },))
         .id();
 
-    let size = Vec2::new(120.0, 80.0);
+    let size = Vec2::new(50.0, 50.0);
     let draggable = commands.spawn((
             Node {
-                width: Val::Px(100.0),
-                height: Val::Px(100.0),
+                width: Val::Px(50.0),
+                height: Val::Px(50.0),
                 position_type: PositionType::Absolute,
                 left: Val::Px(100.0),  // Position it somewhere on screen
                 top: Val::Px(100.0),
                 ..default()
             },
             Size(size),
-            Transform::from_xyz(0.0, 100.0, 0.0),
             BackgroundColor(Color::WHITE),
             Draggable,
         ))
