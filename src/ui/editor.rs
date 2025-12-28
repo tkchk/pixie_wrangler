@@ -132,19 +132,6 @@ fn editor(
                     Text::new("←"),
                 );
             });
-            let size = Vec2::new(120.0, 80.0);
-            // Our sample draggable square
-            parent.spawn((
-                Draggable,
-                Size(size),
-                Transform::default(),
-                GlobalTransform::default(),
-                Sprite {
-                    color: Color::WHITE,
-                    custom_size: Some(Vec2::new(120.0, 80.0)),
-                    ..default()
-                },
-            ));
         })
         .id();
 
@@ -160,49 +147,72 @@ fn editor(
         },))
         .id();
 
+    let size = Vec2::new(120.0, 80.0);
+    let draggable = commands.spawn((
+            Node {
+                width: Val::Px(100.0),
+                height: Val::Px(100.0),
+                position_type: PositionType::Absolute,
+                left: Val::Px(100.0),  // Position it somewhere on screen
+                top: Val::Px(100.0),
+                ..default()
+            },
+            Size(size),
+            Transform::from_xyz(0.0, 100.0, 0.0),
+            BackgroundColor(Color::WHITE),
+            Draggable,
+        ))
+        .id();
+
     commands
         .entity(editor_root)
-        .add_children(&[editor_main_content, editor_bottom_bar]);
+        .add_children(&[editor_main_content, editor_bottom_bar, draggable]);
 }
+
+fn val_px(v: Val) -> f32 {
+    match v {
+        Val::Px(x) => x,
+        _ => 0.0,
+    }
+}
+
 
 fn drag_system(
     mut drag: ResMut<DragState>,
     mouse: Res<ButtonInput<MouseButton>>,
-    windows: Query<&Window>,
-    mut q: Query<(Entity, &mut Transform, &Size), With<Draggable>>,
+    window: Query<&Window>,
+    mut q: Query<(Entity, &mut Node, &Size), With<Draggable>>,
 ) {
-    let window = windows.single().unwrap();
+    let window = window.single().unwrap();
     let Some(cursor) = window.cursor_position() else { return; };
 
-    // Convert cursor to world coordinates
-    let world_cursor = cursor - Vec2::new(window.width(), window.height()) / 2.0;
-
-    // Start drag
     if mouse.just_pressed(MouseButton::Left) {
-        for (entity, transform, size) in q.iter_mut() {
-            let pos = transform.translation.truncate();
-            let half = size.0 / 2.0;
-            let min = pos - half;
-            let max = pos + half;
+        for (entity, node, size) in q.iter() {
+            let pos = Vec2::new(
+                val_px(node.left),
+                val_px(node.top),
+            );
 
-            if world_cursor.x >= min.x && world_cursor.x <= max.x &&
-                world_cursor.y >= min.y && world_cursor.y <= max.y {
+            let min = pos;
+            let max = pos + size.0;
+
+            if cursor.x >= min.x && cursor.x <= max.x &&
+                cursor.y >= min.y && cursor.y <= max.y {
                 drag.entity = Some(entity);
-                drag.offset = pos - world_cursor;
-                println!("{}", drag.offset);
+                drag.offset = pos - cursor;
                 break;
             }
         }
     }
 
-    // Move
     if let Some(entity) = drag.entity {
-        if let Ok((_, mut transform, _)) = q.get_mut(entity) {
-            transform.translation = (world_cursor + drag.offset).extend(transform.translation.z);
+        if let Ok((_, mut node, _)) = q.get_mut(entity) {
+            let pos = cursor + drag.offset;
+            node.left = Val::Px(pos.x);
+            node.top  = Val::Px(pos.y);
         }
     }
 
-    // End drag
     if mouse.just_released(MouseButton::Left) {
         drag.entity = None;
     }
