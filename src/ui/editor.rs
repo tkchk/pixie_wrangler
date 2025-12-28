@@ -95,7 +95,7 @@ fn editor_ui(
                 height: Val::Px(BOTTOM_BAR_HEIGHT),
                 flex_shrink: 0.0,
                 flex_direction: FlexDirection::Row,
-                align_items: AlignItems::Center,
+                align_items: AlignItems::Start,
                 justify_content: JustifyContent::SpaceBetween,
                 padding: UiRect {
                     left: Val::Px(20.),
@@ -141,25 +141,58 @@ fn editor_ui(
         },))
         .id();
 
-    let size = Vec2::new(50.0, 50.0);
     let draggable = commands.spawn((
             Node {
                 width: Val::Px(50.0),
                 height: Val::Px(50.0),
                 position_type: PositionType::Absolute,
-                left: Val::Px(100.0),  // Position it somewhere on screen
-                top: Val::Px(100.0),
+                left: Val::Px(90.0),
+                bottom: Val::Px(10.0),
                 ..default()
             },
-            Size(size),
-            BackgroundColor(Color::WHITE),
+            Size(Vec2::new(50.0, 50.0)),
+            BackgroundColor(Color::srgba(1.0, 1.0, 1.0, 0.4)),
             Draggable,
         ))
         .id();
 
+    let out_terminus = commands.spawn(
+        (
+            Name::new("OutTerminus"),
+            Node {
+                width: Val::Px(50.0),
+                height: Val::Px(50.0),
+                position_type: PositionType::Absolute,
+                left: Val::Px(160.0),
+                bottom: Val::Px(10.0),
+                ..default()
+            },
+            Size(Vec2::new(50.0, 50.0)),
+            BackgroundColor(Color::srgba(1.0, 1.0, 1.0, 0.4)),
+            Draggable,
+        )
+    ).id();
+
+    let in_terminus = commands.spawn(
+        (
+            Name::new("InTerminus"),
+            Node {
+                width: Val::Px(50.0),
+                height: Val::Px(50.0),
+                position_type: PositionType::Absolute,
+                left: Val::Px(230.0),
+                bottom: Val::Px(10.0),
+                ..default()
+            },
+            Size(Vec2::new(50.0, 50.0)),
+            BackgroundColor(Color::srgba(1.0, 1.0, 1.0, 0.4)),
+            Draggable,
+        )
+    ).id();
+
     commands
         .entity(editor_root)
-        .add_children(&[editor_main_content, editor_bottom_bar, draggable]);
+        .add_children(&[editor_main_content, editor_bottom_bar, draggable, out_terminus, in_terminus]);
 }
 
 fn val_px(v: Val) -> f32 {
@@ -169,23 +202,26 @@ fn val_px(v: Val) -> f32 {
     }
 }
 
-
 fn drag_system(
     mut drag: ResMut<DragState>,
     mouse: Res<ButtonInput<MouseButton>>,
     window: Query<&Window>,
-    mut q: Query<(Entity, &mut Node, &Size), With<Draggable>>,
+    mut query: Query<(Entity, &mut Node, &Size), With<Draggable>>,
 ) {
     let window = window.single().unwrap();
     let Some(cursor) = window.cursor_position() else { return; };
+    let window_height = window.height();
 
-    if mouse.just_pressed(MouseButton::Left) {
-        for (entity, node, size) in q.iter() {
-            let pos = Vec2::new(
-                val_px(node.left),
-                val_px(node.top),
-            );
+    // Start drag
+    if mouse.just_pressed(MouseButton::Left) && drag.entity.is_none() {
+        for (entity, node, size) in query.iter() {
+            let left = val_px(node.left);
+            let bottom = val_px(node.bottom);
 
+            // Calculate top position from bottom
+            let top_pos = window_height - bottom - size.0.y;
+
+            let pos = Vec2::new(left, top_pos);
             let min = pos;
             let max = pos + size.0;
 
@@ -198,14 +234,22 @@ fn drag_system(
         }
     }
 
+    // Move
     if let Some(entity) = drag.entity {
-        if let Ok((_, mut node, _)) = q.get_mut(entity) {
+        if let Ok((_, mut node, size)) = query.get_mut(entity) {
             let pos = cursor + drag.offset;
             node.left = Val::Px(pos.x);
-            node.top  = Val::Px(pos.y);
+
+            // Calculate bottom from top position
+            let bottom = window_height - pos.y - size.0.y;
+            node.bottom = Val::Px(bottom);
+
+            // Clear top if it was set (optional)
+            node.top = Val::Auto;
         }
     }
 
+    // End drag
     if mouse.just_released(MouseButton::Left) {
         drag.entity = None;
     }
