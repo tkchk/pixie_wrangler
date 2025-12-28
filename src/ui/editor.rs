@@ -1,6 +1,8 @@
-use std::slice::Windows;
-use crate::{layer, snap_to_grid, theme, Cursor, GameState, GridPoint, Handles, MainCamera,
-            MousePos, MouseSnappedPos, RoadGraph, SelectedLevel, BOTTOM_BAR_HEIGHT, GRID_SIZE};
+use crate::{layer, theme, GameState, GridPoint, BOTTOM_BAR_HEIGHT, GRID_SIZE};
+use bevy::prelude::*;
+use bevy_prototype_lyon::geometry::ShapeBuilder;
+use bevy_prototype_lyon::shapes;
+use bevy_prototype_lyon::prelude::*;
 
 pub struct EditorPlugin;
 #[derive(Component)]
@@ -9,32 +11,25 @@ pub struct EditorScreen;
 struct ExitEditorButton;
 #[derive(Component)]
 struct Draggable;
-
 #[derive(Component)]
 struct Size(Vec2);
-
 #[derive(Resource, Default)]
 struct DragState {
     entity: Option<Entity>,
     offset: Vec2,
 }
 
-use bevy::prelude::*;
-use bevy_prototype_lyon::geometry::ShapeBuilder;
-use bevy_prototype_lyon::shapes;
-use bevy_prototype_lyon::prelude::*;
-
 impl Plugin for EditorPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(DragState::default());
-        app.add_systems(OnEnter(GameState::Editor), (spawn_grid, editor).chain());
+        app.add_systems(OnEnter(GameState::Editor), (spawn_grid, editor_ui).chain());
         app.add_systems(Update, exit_editor_button_system);
         app.add_systems(Update, (drag_system).chain());
-        app.add_systems(OnExit(GameState::Editor), editor_exit);
+        app.add_systems(OnExit(GameState::Editor), editor_destroy);
     }
 }
 
-fn editor_exit(
+fn editor_destroy(
     mut commands: Commands,
     query: Query<Entity, With<EditorScreen>>
 ) {
@@ -77,9 +72,8 @@ fn spawn_grid(
     }
 }
 
-fn editor(
-    mut commands: Commands,
-    handles: Res<Handles>,
+fn editor_ui(
+    mut commands: Commands
 ) {
     let editor_root = commands
         .spawn((

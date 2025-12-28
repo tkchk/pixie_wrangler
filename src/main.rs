@@ -301,9 +301,7 @@ struct SegmentGraphNodes(NodeIndex, NodeIndex);
 enum Tool {
     #[default]
     LineDrawing,
-    NetRipping,
-    TerminusIn,
-    TerminusOut
+    NetRipping
 }
 
 #[derive(Resource, Default)]
@@ -739,7 +737,6 @@ fn drawing_mode_change_system(
             road_state.drawing = false;
             road_state.segments = vec![];
         }
-        _ => {}
     }
 }
 
