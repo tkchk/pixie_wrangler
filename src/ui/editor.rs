@@ -141,6 +141,8 @@ fn editor_ui(
         },))
         .id();
 
+    let gray = 0.2;
+
     let draggable = commands.spawn((
             Node {
                 width: Val::Px(50.0),
@@ -151,7 +153,7 @@ fn editor_ui(
                 ..default()
             },
             Size(Vec2::new(50.0, 50.0)),
-            BackgroundColor(Color::srgba(1.0, 1.0, 1.0, 0.4)),
+            BackgroundColor(Color::srgba(gray, gray, gray, 0.4)),
             Draggable,
         ))
         .id();
@@ -168,7 +170,7 @@ fn editor_ui(
                 ..default()
             },
             Size(Vec2::new(50.0, 50.0)),
-            BackgroundColor(Color::srgba(1.0, 1.0, 1.0, 0.4)),
+            BackgroundColor(Color::srgba(gray, gray, gray, 0.4)),
             Draggable,
         )
     ).id();
@@ -185,7 +187,7 @@ fn editor_ui(
                 ..default()
             },
             Size(Vec2::new(50.0, 50.0)),
-            BackgroundColor(Color::srgba(1.0, 1.0, 1.0, 0.4)),
+            BackgroundColor(Color::srgba(gray, gray, gray, 0.4)),
             Draggable,
         )
     ).id();
